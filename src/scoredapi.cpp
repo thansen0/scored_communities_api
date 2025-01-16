@@ -8,19 +8,27 @@
 #include <vector>
 #include <curl/curl.h>
 
+// All the different sort options
+// https://docs.scored.co/api/feeds/getting-started#sort-options
 #define HOT             "hot"
 #define NEW             "new"
+#define ACTIVE          "active"
+#define RISING          "rising"
+#define top             "top"
 
 using namespace std;
 
 struct ScoredPost {
-    std::string title;
-    std::string preview;
-    std::string url;
-    bool is_stickied;
+    bool is_stickied; // 1 byte
     bool is_nsfw;
+    bool is_locked;
+    bool is_twitter;
     int comments;
     unsigned int score;
+    std::string title;
+    std::string author;
+    std::string preview;
+    std::string url;
 };
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
@@ -88,6 +96,7 @@ public:
     }
 
     static vector<struct ScoredPost> getFeed(std::string community, std::string sort=HOT) {
+        std::vector<struct ScoredPost> scored_feed;
         //std::string base_url = "https://api.scored.co/api/v2/post/hotv2.json?community=meta";
         // std::string base_url = format("https://api.scored.co/api/v2/post/{}v2.json?community={}", sort, community);
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
@@ -103,8 +112,22 @@ public:
                 const auto& json_posts = all_json_data["posts"];
 
                 for (const auto& post : json_posts) {
-                    // 
-                    std::cout << "title: " << post["title"] << std::endl;
+                    // build post, you can easily add or remove values
+                    // from the struct here if you'd like
+                    ScoredPost cur_post;
+
+                    cur_post.is_stickied = post.value("is_stickied", false);
+                    cur_post.is_nsfw = post.value("is_nsfw", false);
+                    cur_post.is_locked = post.value("is_locked", false);
+                    cur_post.is_twitter = post.value("is_twitter", false);
+                    cur_post.comments = post.value("comments", 0);
+                    cur_post.score = post.value("score", 0);
+                    cur_post.title = post.value("title", "");
+                    cur_post.author = post.value("author", "");
+                    cur_post.preview = post.value("preview", "");
+                    cur_post.url = post.value("url", "");
+
+                    scored_feed.push_back(cur_post);
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
@@ -115,17 +138,18 @@ public:
 
         //cout << jsonDataStr << endl;
 
-        std::vector<struct ScoredPost> aa;
-        return aa;
+        return scored_feed;
     }
 };
 
 
 
 int main() {
-    cout << NEW << endl;
+    vector<struct ScoredPost> test = ScoredCoApi::getFeed("meta");
 
-    ScoredCoApi::getFeed("meta");
+    for (ScoredPost post : test) {
+        std::cout << post.title << endl;
+    }
 }
 
 #endif // INCLUDE_SCORED_COMMUNITIES_API_HPP_
