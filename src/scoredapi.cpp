@@ -6,10 +6,11 @@
 #include "json.hpp"
 #include <iostream>
 #include <vector>
+#include <utility> // std::pair
 #include <curl/curl.h>
 #include <thread>
 
-// All the different sort options
+// All the different sort options for feeds
 // https://docs.scored.co/api/feeds/getting-started#sort-options
 #define HOT             "hot"
 #define NEW             "new"
@@ -17,10 +18,20 @@
 #define RISING          "rising"
 #define TOP             "top"
 
+// Comment sort methods
+// #define TOP             "top"
+#define CONTROVERSIAL   "controversial"
+// #define NEW             "new"
+#define OLD             "old"
+
+
 #define TRENDING        "win&isTrendingTopics=true&trendingTopics=%5B%5D"
 #define HOME            "Home"
 
 using namespace std;
+
+// instead of using nlohmann namespace
+typedef nlohmann::json json;
 
 struct ScoredPost {
     bool is_stickied; // 1 byte
@@ -31,6 +42,7 @@ struct ScoredPost {
     bool is_crosspost;
     int comments;
     unsigned int score;
+    unsigned int id;
     std::string title;
     std::string content;
     std::string author;
@@ -81,9 +93,9 @@ public:
         // fetch API key
     }
 
-    static vector<struct ScoredPost> getFeed(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
+    static vector<nlohmann::json> getFeed(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
 
-        std::vector<struct ScoredPost> scored_feed;
+        std::vector<nlohmann::json> scored_feed;
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
 
         if (!post_uuid.empty()) {
@@ -109,6 +121,7 @@ public:
                 for (const auto& post : json_posts) {
                     // build post, you can easily add or remove values
                     // from the struct here if you'd like
+                    /*
                     ScoredPost cur_post;
 
                     cur_post.is_stickied = post.value("is_stickied", false);
@@ -119,6 +132,7 @@ public:
                     cur_post.is_crosspost = post.value("is_crosspost", false);
                     cur_post.comments = post.value("comments", 0);
                     cur_post.score = post.value("score", 0);
+                    cur_post.id = post.value("id", 0);
                     cur_post.title = post.value("title", "");
                     cur_post.content = post.value("content", "");
                     cur_post.author = post.value("author", "");
@@ -126,7 +140,8 @@ public:
                     cur_post.url = post.value("url", "");
                     cur_post.uuid = post.value("uuid", "");
 
-                    scored_feed.push_back(cur_post);
+                    scored_feed.push_back(cur_post); */
+                    scored_feed.push_back(post);
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
@@ -137,26 +152,80 @@ public:
 
         return scored_feed;
     }
+
+    // TODO replace Post and Comment with json object
+    static std::pair<nlohmann::json, std::vector<nlohmann::json>> getPost(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
+        std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
+
+        nlohmann::json post;
+        std::vector<nlohmann::json> comments;
+
+        if (get_comments) {
+            // post with no comments
+            base_url += "&comments=true";
+        }
+
+        if (commentSort == CONTROVERSIAL || commentSort == NEW || commentSort == OLD) {
+            base_url += "&commentSort=" + commentSort;
+
+        }
+
+        cout << base_url << endl << endl;
+
+        string jsonDataStr = ScoredCoApi::GETRequest(base_url);
+        
+        try {
+            nlohmann::json all_json_data = nlohmann::json::parse(jsonDataStr);
+
+            if (all_json_data.contains("posts")) {
+                // posts is plural but there should only be one
+                post = all_json_data["posts"][0];
+            }
+
+            if (all_json_data.contains("comments") && all_json_data["comments"].is_array()) {
+                const auto& json_comments = all_json_data["comments"];
+
+                for (const auto& comment : json_comments) {
+                    comments.push_back(comment);
+                }
+            }
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        } catch (const nlohmann::json::type_error& e) {
+            std::cerr << "JSON type error: " << e.what() << std::endl;
+        }
+
+
+        return std::make_pair(post, comments);
+    }
 };
 
 
 
 int main() {
-    vector<struct ScoredPost> test = ScoredCoApi::getFeed("funny", /* sort= */ HOT, /* appSafe= */ false, "");
+    vector<nlohmann::json> test = ScoredCoApi::getFeed("funny", HOT, false, "");
 
     int i = 0;
-    for (ScoredPost post : test) {
-        std::cout << ++i << ": " << post.title << endl;
+    for (nlohmann::json post : test) {
+        std::cout << ++i << ": " << post.value("title", "") << endl;
+        if (i == 8) {
+            std::pair<nlohmann::json, std::vector<nlohmann::json>> a = ScoredCoApi::getPost(post["id"]);
+
+            vector<nlohmann::json> comments = a.second;
+            for (auto c : comments) {
+                cout << c.value("id", 0) << ": " << c.value("raw_content", "") << endl;;
+            }
+        }
     }
 
     // std::this_thread::sleep_for(std::chrono::seconds(5));
+/*
+    vector<nlohmann::json> test2 = ScoredCoApi::getFeed("funny", HOT, false, test[24].uuid);
 
-    vector<struct ScoredPost> test2 = ScoredCoApi::getFeed("funny", /* sort= */ HOT, /* appSafe= */ false, test[24].uuid);
-
-    for (ScoredPost post : test2) {
+    for (nlohmann::json post : test2) {
         std::cout << ++i << ": " << post.title << endl;
     }
-
+*/
 }
 
 #endif // INCLUDE_SCORED_COMMUNITIES_API_HPP_
