@@ -45,30 +45,6 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* use
     return totalSize;
 }
 
-std::string GETRequest2(const std::string& url) {
-    CURL* curl = curl_easy_init();
-    std::string response;
-
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
-        // Perform the request
-        CURLcode res = curl_easy_perform(curl);
-        if (res != CURLE_OK) {
-            std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
-        }
-
-        // Clean up
-        curl_easy_cleanup(curl);
-    } else {
-        std::cerr << "Failed to initialize CURL." << std::endl;
-    }
-    
-    return response;
-}
-
 class ScoredCoApi {
 private:
     std::string APIKey;
@@ -105,12 +81,12 @@ public:
         // fetch API key
     }
 
-    static vector<struct ScoredPost> getFeed(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const unsigned int pagination=0, const std::string post_uuid="") {
+    static vector<struct ScoredPost> getFeed(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
 
         std::vector<struct ScoredPost> scored_feed;
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
 
-        if (pagination > 0 && !post_uuid.empty()) {
+        if (!post_uuid.empty()) {
             // set pagination if not on first page
             base_url += "&from=" + post_uuid;
         }
@@ -166,7 +142,7 @@ public:
 
 
 int main() {
-    vector<struct ScoredPost> test = ScoredCoApi::getFeed("funny", /* sort= */ HOT, /* appSafe= */ false, 0, "");
+    vector<struct ScoredPost> test = ScoredCoApi::getFeed("funny", /* sort= */ HOT, /* appSafe= */ false, "");
 
     int i = 0;
     for (ScoredPost post : test) {
@@ -175,7 +151,7 @@ int main() {
 
     // std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    vector<struct ScoredPost> test2 = ScoredCoApi::getFeed("funny", /* sort= */ HOT, /* appSafe= */ false, 1, test[24].uuid);
+    vector<struct ScoredPost> test2 = ScoredCoApi::getFeed("funny", /* sort= */ HOT, /* appSafe= */ false, test[24].uuid);
 
     for (ScoredPost post : test2) {
         std::cout << ++i << ": " << post.title << endl;
