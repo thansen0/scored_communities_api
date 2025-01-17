@@ -30,27 +30,6 @@
 
 using namespace std;
 
-// instead of using nlohmann namespace
-typedef nlohmann::json json;
-
-struct ScoredPost {
-    bool is_stickied; // 1 byte
-    bool is_nsfw;
-    bool is_locked;
-    bool is_twitter;
-    bool is_image;
-    bool is_crosspost;
-    int comments;
-    unsigned int score;
-    unsigned int id;
-    std::string title;
-    std::string content;
-    std::string author;
-    std::string preview;
-    std::string url;
-    std::string uuid;
-};
-
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     size_t totalSize = size * nmemb;
     userp->append(static_cast<char*>(contents), totalSize);
@@ -60,7 +39,7 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* use
 class ScoredCoApi {
 private:
     std::string APIKey;
-    vector<ScoredPost> posts;
+    vector<nlohmann::json> posts;
 
     static std::string GETRequest(const std::string& url) {
         CURL* curl = curl_easy_init();
@@ -98,6 +77,12 @@ public:
         std::vector<nlohmann::json> scored_feed;
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
 
+        // sanatize sort input
+        if (sort == HOT || sort == NEW || sort == ACTIVE || sort == RISING || sort == TOP) {
+            cerr << sort << " value not valid for feed sorting. Returning empty vector";
+            return scored_feed;
+        }
+
         if (!post_uuid.empty()) {
             // set pagination if not on first page
             base_url += "&from=" + post_uuid;
@@ -119,29 +104,13 @@ public:
                 const auto& json_posts = all_json_data["posts"];
 
                 for (const auto& post : json_posts) {
-                    // build post, you can easily add or remove values
-                    // from the struct here if you'd like
-                    /*
-                    ScoredPost cur_post;
-
-                    cur_post.is_stickied = post.value("is_stickied", false);
-                    cur_post.is_nsfw = post.value("is_nsfw", false);
-                    cur_post.is_locked = post.value("is_locked", false);
-                    cur_post.is_twitter = post.value("is_twitter", false);
-                    cur_post.is_image = post.value("is_image", false);
-                    cur_post.is_crosspost = post.value("is_crosspost", false);
-                    cur_post.comments = post.value("comments", 0);
-                    cur_post.score = post.value("score", 0);
-                    cur_post.id = post.value("id", 0);
-                    cur_post.title = post.value("title", "");
-                    cur_post.content = post.value("content", "");
-                    cur_post.author = post.value("author", "");
-                    cur_post.preview = post.value("preview", "");
-                    cur_post.url = post.value("url", "");
-                    cur_post.uuid = post.value("uuid", "");
-
-                    scored_feed.push_back(cur_post); */
-                    scored_feed.push_back(post);
+                    // add json comment to post vector
+                    if (post_uuid != post.value("uuid", "")) {
+                        // won't add the initial post if paginating
+                        // also won't add post if no pagination uuid is passed in, and
+                        // json is malformed (incidental behavior)
+                        scored_feed.push_back(post);
+                    }
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
@@ -166,8 +135,10 @@ public:
         }
 
         if (commentSort == CONTROVERSIAL || commentSort == NEW || commentSort == OLD) {
+            // will use default commentSort method if invalid value is entered
+            // different from post sort, where it's required for the query and fails
+            // if an invalid value is entered
             base_url += "&commentSort=" + commentSort;
-
         }
 
         cout << base_url << endl << endl;
@@ -186,6 +157,7 @@ public:
                 const auto& json_comments = all_json_data["comments"];
 
                 for (const auto& comment : json_comments) {
+                    // add to post comment vector
                     comments.push_back(comment);
                 }
             }
