@@ -16,7 +16,9 @@ target_include_directories(ApiHeaders INTERFACE
 
 # Create an executable target 
 add_executable(two_pages_no_login examples/two_pages_no_login.cpp)
+add_executable(print_json_no_login examples/print_json_no_login.cpp)
 
 # Link the executable with the header library
 target_link_libraries(two_pages_no_login ApiHeaders CURL::libcurl)
+target_link_libraries(print_json_no_login ApiHeaders CURL::libcurl)
 

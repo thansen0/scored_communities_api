@@ -9,6 +9,7 @@
 #include <utility> // std::pair
 #include <curl/curl.h>
 #include <thread>
+#include <set>
 
 // All the different sort options for feeds
 // https://docs.scored.co/api/feeds/getting-started#sort-options
@@ -41,8 +42,12 @@ private:
     std::string APIKey;
     vector<nlohmann::json> posts;
 
-    static const validCommentSorts = {HOT, NEW, ACTIVE, RISING, TOP};
-    // static const validPostSorts = {NEW, TOP, CONTROVERSIAL, OLD};
+    //inline static const std::set<string> validCommentSorts = {HOT, NEW, ACTIVE, RISING, TOP};
+    // inline static const std::set<string> validPostSorts = {NEW, TOP, CONTROVERSIAL, OLD};
+
+    //static const std::set<std::string>& getValidCommentSorts() {
+    //    return validCommentSorts;
+    //}
 
     static std::string GETRequest(const std::string& url) {
         CURL* curl = curl_easy_init();
@@ -81,7 +86,8 @@ public:
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
 
         // sanatize sort input
-        if (validCommentSorts.find(sort) == validCommentSorts.end()) {
+        // if (validCommentSorts.find(sort) == validCommentSorts.end()) {
+        if (!(HOT == sort || NEW == sort || ACTIVE == sort || RISING == sort || TOP == sort)) {
             cerr << "\"" << sort << "\" value not valid for feed sorting. Returning empty vector";
             return scored_feed;
         }
