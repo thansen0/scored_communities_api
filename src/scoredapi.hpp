@@ -8,7 +8,7 @@
 #include <vector>
 #include <utility> // std::pair
 #include <curl/curl.h>
-#include <thread>
+// #include <thread>
 #include <set>
 
 // All the different sort options for feeds
@@ -56,7 +56,6 @@ private:
         if (curl) {
             curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
             // curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
-            // curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
@@ -102,7 +101,7 @@ public:
             base_url += "&appSafe=true";
         }
 
-        cout << base_url << endl << endl;
+        // cout << base_url << endl << endl;
 
         string jsonDataStr = ScoredCoApi::GETRequest(base_url);
 
@@ -149,7 +148,7 @@ public:
             base_url += "&commentSort=" + commentSort;
         }
 
-        cout << base_url << endl << endl;
+        // cout << base_url << endl << endl;
 
         string jsonDataStr = ScoredCoApi::GETRequest(base_url);
         
