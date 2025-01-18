@@ -10,7 +10,9 @@ This project (unfortunately) has two dependencies. json.hpp for parsing json (nl
 
 ## Static Library (no user sign-in)
 
-You can use this library statically, without signing in. An example might look like the following.
+You can use this library statically, without signing in or creating a class instance.
+
+Here we access one page, and print out the comments from the first post while printing out the title of each post. Then we access a second page, and print out all the titles of those posts. Pages usually render in sets of 25 posts.
 
 ```
 #include "scoredapi.hpp"
@@ -43,3 +45,13 @@ int main() {
     }
 }
 ```
+
+Here we are limited to only viewing feeds of posts and comments.
+
+Posts (and comments) are returned as json objects, courtesy of `nlohmann/json`. You can view all fields by printout out the object (i.e. `cout << post << endl`), and you can access the fields though square brackets (i.e. `post["title"]`). Using square brackets will crash if the field doesn't exist, so you can either use the value function `post.value("title", "default")` to return the value or a default value, or you can use `post.contains("title")` to return a `bool` on whether or not the field exists.
+
+## Library Sign-in
+
+A more feature-rich experience is using the class creator to pass in a `username` and `password`. Unfortunately it's still a work in progress, and is not available on the current version.
+
+

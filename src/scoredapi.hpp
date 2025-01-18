@@ -78,7 +78,7 @@ public:
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
 
         // sanatize sort input
-        if (sort == HOT || sort == NEW || sort == ACTIVE || sort == RISING || sort == TOP) {
+        if ( !(sort == HOT || sort == NEW || sort == ACTIVE || sort == RISING || sort == TOP) ) {
             cerr << sort << " value not valid for feed sorting. Returning empty vector";
             return scored_feed;
         }
@@ -122,7 +122,6 @@ public:
         return scored_feed;
     }
 
-    // TODO replace Post and Comment with json object
     static std::pair<nlohmann::json, std::vector<nlohmann::json>> getPost(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
         std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
 
@@ -172,32 +171,5 @@ public:
     }
 };
 
-
-
-int main() {
-    vector<nlohmann::json> test = ScoredCoApi::getFeed("funny", HOT, false, "");
-
-    int i = 0;
-    for (nlohmann::json post : test) {
-        std::cout << ++i << ": " << post.value("title", "") << endl;
-        if (i == 8) {
-            std::pair<nlohmann::json, std::vector<nlohmann::json>> a = ScoredCoApi::getPost(post["id"]);
-
-            vector<nlohmann::json> comments = a.second;
-            for (auto c : comments) {
-                cout << c.value("id", 0) << ": " << c.value("raw_content", "") << endl;;
-            }
-        }
-    }
-
-    // std::this_thread::sleep_for(std::chrono::seconds(5));
-/*
-    vector<nlohmann::json> test2 = ScoredCoApi::getFeed("funny", HOT, false, test[24].uuid);
-
-    for (nlohmann::json post : test2) {
-        std::cout << ++i << ": " << post.title << endl;
-    }
-*/
-}
 
 #endif // INCLUDE_SCORED_COMMUNITIES_API_HPP_
