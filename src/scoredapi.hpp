@@ -41,6 +41,9 @@ private:
     std::string APIKey;
     vector<nlohmann::json> posts;
 
+    static const validCommentSorts = {HOT, NEW, ACTIVE, RISING, TOP};
+    // static const validPostSorts = {NEW, TOP, CONTROVERSIAL, OLD};
+
     static std::string GETRequest(const std::string& url) {
         CURL* curl = curl_easy_init();
         std::string response;
@@ -78,8 +81,8 @@ public:
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
 
         // sanatize sort input
-        if ( !(sort == HOT || sort == NEW || sort == ACTIVE || sort == RISING || sort == TOP) ) {
-            cerr << sort << " value not valid for feed sorting. Returning empty vector";
+        if (validCommentSorts.find(sort) == validCommentSorts.end()) {
+            cerr << "\"" << sort << "\" value not valid for feed sorting. Returning empty vector";
             return scored_feed;
         }
 

@@ -14,7 +14,7 @@ You can use this library statically, without signing in or creating a class inst
 
 Here we access one page, and print out the comments from the first post while printing out the title of each post. Then we access a second page, and print out all the titles of those posts. Pages usually render in sets of 25 posts.
 
-```
+```C++
 #include "scoredapi.hpp"
 #include "json.hpp"
 
