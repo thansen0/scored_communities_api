@@ -4,7 +4,7 @@ This is a C++ implementation of the [scored.co](https://scored.co/) API. This is
 
 ## Building
 
-This project (unfortunately) has two dependencies. json.hpp for parsing json (nlohmann/json), and libcurl for processing GET and POST requests. Be sure to include `-lcurl` when building with g++, or to put it in your CMake file. When using this project, you **must** include both `json.hpp` and `scoredapi.hpp` in the include or src folder in your project.
+This project (unfortunately) has two dependencies. json.hpp for parsing json (nlohmann/json), and libcurl for processing GET and POST requests. Be sure to include `-lcurl` when building with g++, or to put it in your CMake file. When using this project, you **must** include both `json.hpp` ([json.hpp](src/json.hpp)) and `scoredapi.hpp` ([scoredapi.hpp](src/scoredapi.hpp)) in the include or src folder in your project.
 
 If you would like to build this project and run the examples, you may run
 

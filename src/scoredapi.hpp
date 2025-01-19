@@ -177,6 +177,39 @@ public:
 
         return std::make_pair(post, comments);
     }
+
+    static nlohmann::json getUser(const std::string username) {
+        nlohmann::json user_data;
+
+        std::string base_url = "https://api.scored.co/api/v2/user/about.json?user=" + username;
+
+        // cout << base_url << endl << endl;
+
+        string jsonDataStr = ScoredCoApi::GETRequest(base_url);
+
+        try {
+            nlohmann::json all_json_data = nlohmann::json::parse(jsonDataStr);
+
+            if (!all_json_data.value("status", false)) {
+                // GET request has failed, return empty json
+                std::cerr << "Error finding user" << std::endl;
+                return user_data;
+            }
+
+            if (all_json_data.contains("users") && all_json_data["users"].size() > 0) {
+                // should be an array of one user (i.e. the user we want)
+                user_data = all_json_data["users"][0];
+            }
+
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        } catch (const nlohmann::json::type_error& e) {
+            std::cerr << "JSON type error: " << e.what() << std::endl;
+        }
+
+        return user_data;
+    }
+
 };
 
 
