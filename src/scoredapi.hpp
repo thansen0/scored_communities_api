@@ -1,3 +1,13 @@
+//                             _            
+//                            | |           
+//  ___  ___ ___  _ __ ___  __| |  ___ ___  
+// / __|/ __/ _ \| '__/ _ \/ _` | / __/ _ \     C++ Library for scored.co
+// \__ \ (_| (_) | | |  __/ (_| || (_| (_) |    version 0.0.1
+// |___/\___\___/|_|  \___|\__,_(_)___\___/     https://github.com/thansen0
+//                                          
+// 
+// SPDX-FileCopyrightText: 2025 thansen0 <https://github.com/thansen0>
+// SPDX-License-Identifier: Unlicense
 
 #ifndef INCLUDE_SCORED_COMMUNITIES_API_HPP_
 #define INCLUDE_SCORED_COMMUNITIES_API_HPP_
@@ -37,6 +47,13 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* use
     return totalSize;
 }
 
+/**
+ * @brief Contains all of the logic for interacting with the scored.co API
+ *
+ * The ScoredCoApi interacts with the scored.co API v2, and uses static
+ * methods for interacting with the API when a user is signed in, or 
+ * can be instantiated and used with a signed-in user.
+ */
 class ScoredCoApi {
 private:
     std::string APIKey;
@@ -49,6 +66,14 @@ private:
     //    return validCommentSorts;
     //}
 
+
+    /**
+     * @brief Performs a GET request using libcurl.
+     * 
+     * @param url The complete URL to perform the GET request on.
+     *
+     * @return A string of the response, or an empty string in the case of an error.
+     */
     static std::string GETRequest(const std::string& url) {
         CURL* curl = curl_easy_init();
         std::string response;
@@ -79,6 +104,17 @@ public:
         // fetch API key
     }
 
+    /**
+     * @brief Gets the feed from a specific community.
+     * 
+     * @param community The community you would like to read from.
+     * @param sort      Sorting method, choose from HOT, NEW, ACTIVE, RISING, or TOP.
+     * @param appSafe   Whether the community is safe for the app store.
+     * @param post_uuid The post UUID from which you want to start paginating. Used 
+     *                  for multiple page requests 
+     *
+     * @return A JSON object containing relevant data.
+     */
     static vector<nlohmann::json> getFeed(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
 
         std::vector<nlohmann::json> scored_feed;
@@ -130,6 +166,16 @@ public:
         return scored_feed;
     }
 
+    /**
+     * @brief Gets the comments and information from a specific post.
+     * 
+     * @param post_id       ID from which the post belongs.
+     * @param get_comments  Boolean value of whether to retrieve comments or not.
+     * @param commentSort   Comment sort direction (default TOP, optionally
+     *                      CONTROVERSIAL, NEW, and OLD. 
+     *
+     * @return A std::pair, first of the post, second containing a vector of comments.
+     */
     static std::pair<nlohmann::json, std::vector<nlohmann::json>> getPost(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
         std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
 
@@ -178,6 +224,13 @@ public:
         return std::make_pair(post, comments);
     }
 
+    /**
+     * @brief Retrieves specific user.
+     *
+     * @param username User's username.
+     * 
+     * @return json object containing the specified user's information.
+     */
     static nlohmann::json getUser(const std::string username) {
         nlohmann::json user_data;
 
