@@ -65,4 +65,6 @@ A more feature-rich experience is using the class creator to pass in a `username
 
 # LICENSE
 
-This library, and specifically the file [scoredapi.hpp](src/scoredapi.hpp), is open source, using the Unlicense. This effectively means it's in the public domain and you may relicense it with whatever license you choose. [json.hpp](src/json.hpp) however, is not effectively in the public domain. This is a third party library by [nlohmann](https://github.com/nlohmann/json), and has the MIT license. It is open sourced, and you may use it, however you may not remove the MIT license notifications from `json.hpp`, where you can remove them in the [scoredapi.hpp](src/scoredapi.hpp) file.
+This library, and specifically the file [scoredapi.hpp](src/scoredapi.hpp), is open source, using the Unlicense. This effectively means it's in the public domain and you may relicense it with whatever license you choose.
+
+[json.hpp](src/json.hpp) however, is a third party library by [nlohmann](https://github.com/nlohmann/json), and has the MIT license. It is open sourced, and you may use it, however you may not remove the MIT license notifications from `json.hpp`, while you can remove them in the [scoredapi.hpp](src/scoredapi.hpp) file.
