@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.10) # Or a suitable minimum version
+cmake_minimum_required(VERSION 3.18)
+
+set(CMAKE_CXX_STANDARD 17)
 
 project(ScoredCoAPI)
 
@@ -14,13 +16,15 @@ target_include_directories(ApiHeaders INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-# Create an executable target 
-add_executable(two_pages_no_login examples/two_pages_no_login.cpp)
-add_executable(print_json_no_login examples/print_json_no_login.cpp)
-add_executable(view_user_no_login examples/view_user_no_login.cpp)
+# We want to make sure each file in the examples folder is built
+# any .cpp file in examples/ will be turned into a stand-alone binary
+file(GLOB EXAMPLES_FILES examples/*.cpp)
 
-# Link the executable with the header library
-target_link_libraries(two_pages_no_login ApiHeaders CURL::libcurl)
-target_link_libraries(print_json_no_login ApiHeaders CURL::libcurl)
-target_link_libraries(view_user_no_login ApiHeaders CURL::libcurl)
+foreach(EXAMPLES_FILE ${EXAMPLES_FILES})
+    # Set filename to TARGET_NAME
+    get_filename_component(TARGET_NAME ${EXAMPLES_FILE} NAME_WE)
+    add_executable(${TARGET_NAME} ${EXAMPLES_FILE})
 
+    # link and build executable
+    target_link_libraries(${TARGET_NAME} PRIVATE ApiHeaders CURL::libcurl)
+endforeach()

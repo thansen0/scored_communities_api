@@ -1,6 +1,6 @@
 # Scored Communities C++ API
 
-This is a C++ implementation of the [scored.co](https://scored.co/) API. This is the same site as patriots.win and communities.win, and you can use their API interchangeably.
+This is a C++ implementation of the [scored.co](https://scored.co/) API. This is the same site as patriots.win and communities.win, and you can use their API interchangeably. This library is **not** officially affiliated with scored.co, patriots.win, or any of their associated sites.
 
 ## Building
 
