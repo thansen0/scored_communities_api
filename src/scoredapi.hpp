@@ -124,6 +124,58 @@ private:
     }
 
     /**
+     * @brief Performs a GET request using libcurl, and passes through api keys.
+     * 
+     * @param url The complete URL to perform the GET request on.
+     *
+     * @return A string of the response, or an empty string in the case of an error.
+     */
+    std::string GETRequestAuth(const std::string& url) {
+        CURL* curl = curl_easy_init();
+
+        struct curl_slist* headers = nullptr;
+        std::string response;
+
+        if (this->public_key == "" || this->private_key == "") {
+            cerr << "User key not present" << endl;
+            return response;
+        } 
+
+        if (curl) {
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+            // curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+            // add api key headers
+            headers = curl_slist_append(headers,
+                    string("x-api-key: ").append(this->public_key).c_str()
+            );
+            headers = curl_slist_append(headers,
+                    string("x-api-secret: ").append(this->private_key).c_str()
+            );
+
+            // attach header to curl object 
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+            // Perform the request
+            CURLcode res = curl_easy_perform(curl);
+            if (res != CURLE_OK) {
+                std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
+                return response;
+            }
+
+            // Clean up
+            curl_slist_free_all(headers);
+            curl_easy_cleanup(curl);
+        } else {
+            std::cerr << "Failed to initialize CURL." << std::endl;
+        }
+
+        return response;
+    }
+
+    /**
      * @brief Performs a POST request to access the LTS token cookie, and returnit.
      * 
      * @param url The complete URL to perform the POST request on.
@@ -170,14 +222,15 @@ private:
             } else {
                 long http_code = 0;
                 curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-                std::cout << "HTTP Response Code: " << http_code << std::endl;
+                // Add to debug TODO
+                // std::cout << "LTS Token HTTP Response Code: " << http_code << std::endl;
 
-                std::cout << "Response Body: " << response << std::endl;
+                // std::cout << "Response Body: " << response << std::endl;
 
                 auto it = responseHeaders.find("set-cookie");
                 if(it != responseHeaders.end()) {
                     for(const std::string& cookie : it->second) {
-                        std::cout << "LTS header: " << cookie << std::endl;
+                        // std::cout << "LTS header: " << cookie << std::endl;
                         if (cookie[0] == 'L' && cookie[1] == 'T' && cookie[2] == 'S') {
                             size_t LTS_token_end = cookie.find(';') - 4;
                             std::memcpy(LTS_cookie, cookie.c_str() + 4, LTS_token_end);
@@ -187,7 +240,7 @@ private:
                         }
                     }
                 } else {
-                    std::cout << "Set-Cookie Header not found." << std::endl;
+                    std::cerr << "Set-Cookie Header not found." << std::endl;
                 }
             }
 
@@ -201,6 +254,14 @@ private:
         return std::string(LTS_cookie);
     }
 
+    /**
+     * @brief Performs a POST request to access the public and private keys.
+     * 
+     * @param url The complete URL to perform the POST request on.
+     * @param LTS token
+     *
+     * @return JSON string containing public and private keys
+     */
     std::string POSTRequestForKeys(const std::string& url, std::string lts_token) {
         std::string response;
 
@@ -238,20 +299,26 @@ private:
     }
 
 public:
-    ScoredCoApi(std::string username, std::string password) {
+    ScoredCoApi(std::string username="", std::string password="") {
+        if (username != "" && password != "") {
+            this->setUsernamePassword(username, password);
+        }
+    }
+
+    void setUsernamePassword(std::string username, std::string password) {
         // fetch API key
         std::string url = "https://api.scored.co/api/v2/user/login";
         std::string parameters = "username=" + username + "&password=" + password;
 
         std::string LTS_token = POSTRequestForLTSCookie(url, parameters);
 
-        cout << LTS_token << endl;
+        // cout << LTS_token << endl;
 
         url = "https://api.scored.co/api/v2/token";
-        
+
         std::string jsonDataStr = POSTRequestForKeys(url, LTS_token);
 
-        cout << jsonDataStr << endl;
+        // cout << jsonDataStr << endl;
 
         try {
             auto all_json_data = nlohmann::json::parse(jsonDataStr);
@@ -270,8 +337,12 @@ public:
             std::cerr << "JSON type error: " << e.what() << std::endl;
         }
 
-        cout << this->public_key << ", and " << this->private_key << endl; 
+        // printf("pub_key:  %s \npriv_key: %s", this->public_key, this->private_key);
+    }
 
+    void setApiKeys(std::string public_key, std::string private_key) {
+        this->public_key = public_key;
+        this->private_key = private_key;
     }
 
     /**
@@ -409,6 +480,48 @@ public:
         // cout << base_url << endl << endl;
 
         string jsonDataStr = ScoredCoApi::GETRequest(base_url);
+
+        try {
+            nlohmann::json all_json_data = nlohmann::json::parse(jsonDataStr);
+
+            if (!all_json_data.value("status", false)) {
+                // GET request has failed, return empty json
+                std::cerr << "Error finding user" << std::endl;
+                return user_data;
+            }
+
+            if (all_json_data.contains("users") && all_json_data["users"].size() > 0) {
+                // should be an array of one user (i.e. the user we want)
+                user_data = all_json_data["users"][0];
+            }
+
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        } catch (const nlohmann::json::type_error& e) {
+            std::cerr << "JSON type error: " << e.what() << std::endl;
+        }
+
+        return user_data;
+    }
+
+    /**
+     * @brief Retrieves specific user data from a signed in user.
+     *
+     * @param username User's username.
+     * 
+     * @return json object containing the specified user's information.
+     */
+    nlohmann::json getUserAuth(const std::string username="me") {
+        nlohmann::json user_data;
+
+        std::string base_url = "https://api.scored.co/api/v2/user/about.json?user=" + username;
+
+        string jsonDataStr = this->GETRequestAuth(base_url);
+
+        if (jsonDataStr == "") {
+            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            return user_data;
+        }
 
         try {
             nlohmann::json all_json_data = nlohmann::json::parse(jsonDataStr);
