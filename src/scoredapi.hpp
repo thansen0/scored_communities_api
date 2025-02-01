@@ -41,9 +41,36 @@
 
 using namespace std;
 
+using HeaderMap = std::map<std::string, std::vector<std::string>>;
+
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     size_t totalSize = size * nmemb;
     userp->append(static_cast<char*>(contents), totalSize);
+    return totalSize;
+}
+
+size_t HeaderCallback(char* buffer, size_t size, size_t nitems, void* userdata) {
+    size_t totalSize = size * nitems;
+    HeaderMap* headers = static_cast<HeaderMap*>(userdata);
+
+    std::string headerLine(buffer, totalSize);
+
+    // Find the separator between header name and value
+    size_t separator = headerLine.find(':');
+    if (separator != std::string::npos) {
+        std::string headerName = headerLine.substr(0, separator);
+        // Remove potential leading/trailing whitespace and the colon
+        std::string headerValue = headerLine.substr(separator + 1);
+        // Trim whitespace
+        headerName.erase(headerName.find_last_not_of(" \t\r\n") + 1);
+        headerValue.erase(0, headerValue.find_first_not_of(" \t\r\n"));
+        headerValue.erase(headerValue.find_last_not_of(" \t\r\n") + 1);
+
+        // Insert into the map (convert header names to lowercase for case-insensitive access)
+        std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
+        headers->emplace(headerName, std::vector<std::string>()).first->second.push_back(headerValue);
+    }
+
     return totalSize;
 }
 
@@ -56,15 +83,11 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* use
  */
 class ScoredCoApi {
 private:
-    std::string APIKey;
+    std::string public_key, private_key;
     vector<nlohmann::json> posts;
 
-    //inline static const std::set<string> validCommentSorts = {HOT, NEW, ACTIVE, RISING, TOP};
-    // inline static const std::set<string> validPostSorts = {NEW, TOP, CONTROVERSIAL, OLD};
-
-    //static const std::set<std::string>& getValidCommentSorts() {
-    //    return validCommentSorts;
-    //}
+    // static const std::set<string> validCommentSorts = {HOT, NEW, ACTIVE, RISING, TOP};
+    // static const std::set<string> validPostSorts = {NEW, TOP, CONTROVERSIAL, OLD};
 
 
     /**
@@ -94,7 +117,122 @@ private:
             curl_easy_cleanup(curl);
         } else {
             std::cerr << "Failed to initialize CURL." << std::endl;
+            // TODO add check for curl cleanup
         }
+
+        return response;
+    }
+
+    /**
+     * @brief Performs a POST request to access the LTS token cookie, and returnit.
+     * 
+     * @param url The complete URL to perform the POST request on.
+     * @param parameteres .
+     *
+     * @return A string containing just the token, or an empty string in the case of an error.
+     */
+    std::string POSTRequestForLTSCookie(const std::string& url, const std::string parameters) {
+        CURL* curl = curl_easy_init();
+        std::string response;
+        HeaderMap responseHeaders;
+
+        char LTS_cookie[50]; // I think this can just be 44 but rounding up
+
+        if(curl) {
+            CURLcode res;
+
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+            curl_easy_setopt(curl, CURLOPT_POST, 1L);
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, parameters.c_str());
+
+            // If you need to set headers, e.g., Content-Type
+            struct curl_slist* headers = NULL;
+            headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded"); // "Content-Type: application/json");
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+            // Set up the callback to receive the response
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+            curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback);
+            curl_easy_setopt(curl, CURLOPT_HEADERDATA, &responseHeaders);
+
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L); // 5 seconds
+            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+            res = curl_easy_perform(curl);
+
+
+            // Check for errors
+            if(res != CURLE_OK) {
+                std::cerr << "curl_easy_perform() failed: " 
+                          << curl_easy_strerror(res) << std::endl;
+            } else {
+                long http_code = 0;
+                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+                std::cout << "HTTP Response Code: " << http_code << std::endl;
+
+                std::cout << "Response Body: " << response << std::endl;
+
+                auto it = responseHeaders.find("set-cookie");
+                if(it != responseHeaders.end()) {
+                    for(const std::string& cookie : it->second) {
+                        std::cout << "LTS header: " << cookie << std::endl;
+                        if (cookie[0] == 'L' && cookie[1] == 'T' && cookie[2] == 'S') {
+                            size_t LTS_token_end = cookie.find(';') - 4;
+                            std::memcpy(LTS_cookie, cookie.c_str() + 4, LTS_token_end);
+
+                            LTS_cookie[LTS_token_end+1] = '\0';
+                            break;
+                        }
+                    }
+                } else {
+                    std::cout << "Set-Cookie Header not found." << std::endl;
+                }
+            }
+
+            // Clean up
+            curl_slist_free_all(headers);
+            curl_easy_cleanup(curl);
+        } else {
+            std::cerr << "Failed to initialize CURL." << std::endl;
+        }
+
+        return std::string(LTS_cookie);
+    }
+
+    std::string POSTRequestForKeys(const std::string& url, std::string lts_token) {
+        std::string response;
+
+        CURL* curl = curl_easy_init();
+        if (!curl) {
+            std::cerr << "Failed to init curl\n";
+            return response;
+        }
+
+        curl_easy_setopt(curl, CURLOPT_URL, "https://api.scored.co/api/v2/token");
+
+        // We want a POST request
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        // If you need an empty body, set this:
+        // (No form fields or JSON data needed, so a zero-length body)
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
+
+        // Provide the cookie header string
+        // e.g. "LTS=XYZ; XSRF-TOKEN=ABC; WSID01=DEF"
+        lts_token = "LTS=" + lts_token;
+        curl_easy_setopt(curl, CURLOPT_COOKIE, lts_token.c_str());
+
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << '\n';
+        }
+
+        curl_easy_cleanup(curl);
 
         return response;
     }
@@ -102,6 +240,38 @@ private:
 public:
     ScoredCoApi(std::string username, std::string password) {
         // fetch API key
+        std::string url = "https://api.scored.co/api/v2/user/login";
+        std::string parameters = "username=" + username + "&password=" + password;
+
+        std::string LTS_token = POSTRequestForLTSCookie(url, parameters);
+
+        cout << LTS_token << endl;
+
+        url = "https://api.scored.co/api/v2/token";
+        
+        std::string jsonDataStr = POSTRequestForKeys(url, LTS_token);
+
+        cout << jsonDataStr << endl;
+
+        try {
+            auto all_json_data = nlohmann::json::parse(jsonDataStr);
+
+            if (all_json_data.contains("status") && all_json_data["status"]) {
+                this->public_key = all_json_data["api_key"];
+                this->private_key = all_json_data["api_secret"];
+            } else {
+                // return or print out some error
+                cerr << "Error; not logged in." << all_json_data.value("error", "") << endl;
+            }
+
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        } catch (const nlohmann::json::type_error& e) {
+            std::cerr << "JSON type error: " << e.what() << std::endl;
+        }
+
+        cout << this->public_key << ", and " << this->private_key << endl; 
+
     }
 
     /**
