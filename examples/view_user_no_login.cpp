@@ -7,7 +7,7 @@
 
 int main() {
     // we will get the Admin user C
-    nlohmann::json user = ScoredCoApi::getUser("c");
+    nlohmann::json user = ScoredCoApi::getUserPublic("c");
 
     // view json blob in terminal 
     // std::cout << user << std::endl;

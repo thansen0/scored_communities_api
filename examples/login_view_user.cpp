@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     // by default, it grabs the signed in user. You may pass in
     // any username you like however
-    json user = a.getUserAuth();
+    json user = a.getUser();
 
     // prints out all json data
     cout << user << endl;
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    vector<json> feed = a.getFeedAuth();
+    vector<json> feed = a.getFeed();
 
     if (feed.size() == 0) {
         cout << "Feed is empty" << endl;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
 
     int post_id = feed[0].value("id", 0);
 
-    pair<json, vector<json>> post = a.getPostAuth(post_id);
+    pair<json, vector<json>> post = a.getPost(post_id);
 
     // print out post id I got above and post contents
     cout << "Post id: " << post_id << " has " << post.second.size() << " comments." << endl;

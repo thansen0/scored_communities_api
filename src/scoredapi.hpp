@@ -84,7 +84,7 @@ size_t HeaderCallback(char* buffer, size_t size, size_t nitems, void* userdata) 
 class ScoredCoApi {
 private:
     std::string public_key, private_key;
-    vector<nlohmann::json> posts;
+    // vector<nlohmann::json> posts;
 
     // static const std::set<string> validCommentSorts = {HOT, NEW, ACTIVE, RISING, TOP};
     // static const std::set<string> validPostSorts = {NEW, TOP, CONTROVERSIAL, OLD};
@@ -356,7 +356,7 @@ public:
      *
      * @return A JSON object containing relevant data.
      */
-    static vector<nlohmann::json> getFeed(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
+    static vector<nlohmann::json> getFeedPublic(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
 
         std::vector<nlohmann::json> scored_feed;
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
@@ -418,7 +418,7 @@ public:
      *
      * @return A JSON object containing relevant data.
      */
-    vector<nlohmann::json> getFeedAuth(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
+    vector<nlohmann::json> getFeed(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
 
         std::vector<nlohmann::json> scored_feed;
         std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
@@ -484,7 +484,7 @@ public:
      *
      * @return A std::pair, first of the post, second containing a vector of comments.
      */
-    static std::pair<nlohmann::json, std::vector<nlohmann::json>> getPost(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
+    static std::pair<nlohmann::json, std::vector<nlohmann::json>> getPostPublic(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
         std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
 
         nlohmann::json post;
@@ -541,7 +541,7 @@ public:
      *
      * @return A std::pair, first of the post, second containing a vector of comments.
      */
-    std::pair<nlohmann::json, std::vector<nlohmann::json>> getPostAuth(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
+    std::pair<nlohmann::json, std::vector<nlohmann::json>> getPost(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
         std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
 
         nlohmann::json post;
@@ -600,7 +600,7 @@ public:
      * 
      * @return json object containing the specified user's information.
      */
-    static nlohmann::json getUser(const std::string username) {
+    static nlohmann::json getUserPublic(const std::string username) {
         nlohmann::json user_data;
 
         std::string base_url = "https://api.scored.co/api/v2/user/about.json?user=" + username;
@@ -639,7 +639,7 @@ public:
      * 
      * @return json object containing the specified user's information.
      */
-    nlohmann::json getUserAuth(const std::string username="me") {
+    nlohmann::json getUser(const std::string username="me") {
         nlohmann::json user_data;
 
         std::string base_url = "https://api.scored.co/api/v2/user/about.json?user=" + username;

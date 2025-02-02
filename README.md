@@ -21,14 +21,14 @@ make
 
 You can use this library statically, without signing in or creating a class instance.
 
-Here we access one page, and print out the comments from the first post while printing out the title of each post. Then we access a second page, and print out all the titles of those posts. Pages usually render in sets of 25 posts.
+Here we access one page, and print out the comments from the first post while printing out the title of each post. Then we access a second page, and print out all the titles of those posts. Pages usually render in sets of 25 posts. Since we're not signed in, we're only able to access public data.
 
 ```C++
 #include "scoredapi.hpp"
 #include "json.hpp"
 
 int main() {
-    vector<nlohmann::json> page1 = ScoredCoApi::getFeed("funny", HOT, false);
+    vector<nlohmann::json> page1 = ScoredCoApi::getFeedPublic("funny", HOT, false);
 
     int i = 0;
     for (nlohmann::json post : page1) {
@@ -37,7 +37,7 @@ int main() {
         // print post comments
         if (i == 1) {
             // we print all the comments from the 1st post
-            std::pair<nlohmann::json, std::vector<nlohmann::json>> p = ScoredCoApi::getPost(post["id"]);
+            std::pair<nlohmann::json, std::vector<nlohmann::json>> p = ScoredCoApi::getPostPublic(post["id"]);
 
             // p.first is post data (same as post), p.second is comment vector
             vector<nlohmann::json> comments = p.second;
@@ -47,7 +47,7 @@ int main() {
         }
     }
 
-    vector<nlohmann::json> page2 = ScoredCoApi::getFeed("funny", HOT, false, test.back().value("uuid", ""));
+    vector<nlohmann::json> page2 = ScoredCoApi::getFeedPublic("funny", HOT, false, test.back().value("uuid", ""));
 
     for (nlohmann::json post : page2) {
         std::cout << ++i << ": " << post.value("title", "") << endl;

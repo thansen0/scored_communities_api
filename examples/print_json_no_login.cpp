@@ -6,7 +6,7 @@
 #include "json.hpp"
 
 int main() {
-    vector<nlohmann::json> page1 = ScoredCoApi::getFeed(TRENDING, HOT, false);
+    vector<nlohmann::json> page1 = ScoredCoApi::getFeedPublic(TRENDING, HOT, false);
 
     if (page1.size() > 0) {
         // print page
@@ -14,7 +14,7 @@ int main() {
         std::cout << "JSON post blob: " << page1[0] << std::endl;
 
         // get comment
-        std::pair<nlohmann::json, std::vector<nlohmann::json>> p = ScoredCoApi::getPost(page1[0]["id"]);
+        std::pair<nlohmann::json, std::vector<nlohmann::json>> p = ScoredCoApi::getPostPublic(page1[0]["id"]);
 
         // print first comment
         std::vector<nlohmann::json> comments = p.second;
