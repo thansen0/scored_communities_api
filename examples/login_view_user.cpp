@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
             std::cout << "This user is suspended." << std::endl;
         }
 
-        std::cout << "A list of the first ten communities user " << user.value("username", "") << " is subscribed to:" << std::endl;
+        std::cout << "A list of the first ten communities user " << user.value("username", "") << " is subscribed to:" << std::endl << std::endl;
 
         int i = 0;
         for (nlohmann::json com : user["subscribed"]) {
@@ -48,5 +48,23 @@ int main(int argc, char *argv[]) {
                 break;
         }
     }
+
+    vector<json> feed = a.getFeedAuth();
+
+    if (feed.size() == 0) {
+        cout << "Feed is empty" << endl;
+        cout << feed << endl;
+        return 1;
+    }
+
+    cout << feed[0] << endl;
+
+    int post_id = feed[0].value("id", 0);
+
+    pair<json, vector<json>> post = a.getPostAuth(post_id);
+
+    // print out post id I got above and post contents
+    cout << "Post id: " << post_id << " has " << post.second.size() << " comments." << endl;
+    // comments vector in post.second
 
 }

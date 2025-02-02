@@ -408,6 +408,73 @@ public:
     }
 
     /**
+     * @brief Gets the feed from a specific community from an authenticated user.
+     * 
+     * @param community The community you would like to read from.
+     * @param sort      Sorting method, choose from HOT, NEW, ACTIVE, RISING, or TOP.
+     * @param appSafe   Whether the community is safe for the app store.
+     * @param post_uuid The post UUID from which you want to start paginating. Used 
+     *                  for multiple page requests 
+     *
+     * @return A JSON object containing relevant data.
+     */
+    vector<nlohmann::json> getFeedAuth(const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false, const std::string post_uuid="") {
+
+        std::vector<nlohmann::json> scored_feed;
+        std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
+
+        // sanatize sort input
+        // if (validCommentSorts.find(sort) == validCommentSorts.end()) {
+        if (!(HOT == sort || NEW == sort || ACTIVE == sort || RISING == sort || TOP == sort)) {
+            cerr << "\"" << sort << "\" value not valid for feed sorting. Returning empty vector";
+            return scored_feed;
+        }
+
+        if (!post_uuid.empty()) {
+            // set pagination if not on first page
+            base_url += "&from=" + post_uuid;
+        }
+
+        if (appSafe) {
+            // only allow sfw content
+            base_url += "&appSafe=true";
+        }
+
+        // cout << base_url << endl << endl;
+
+        string jsonDataStr = this->GETRequestAuth(base_url);
+
+        if (jsonDataStr == "") {
+            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            return scored_feed;
+        }
+
+        try {
+            auto all_json_data = nlohmann::json::parse(jsonDataStr);
+
+            if (all_json_data.contains("posts") && all_json_data["posts"].is_array()) {
+                const auto& json_posts = all_json_data["posts"];
+
+                for (const auto& post : json_posts) {
+                    // add json comment to post vector
+                    if (post_uuid != post.value("uuid", "")) {
+                        // won't add the initial post if paginating
+                        // also won't add post if no pagination uuid is passed in, and
+                        // json is malformed (incidental behavior)
+                        scored_feed.push_back(post);
+                    }
+                }
+            }
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        } catch (const nlohmann::json::type_error& e) {
+            std::cerr << "JSON type error: " << e.what() << std::endl;
+        }
+
+        return scored_feed;
+    }
+
+    /**
      * @brief Gets the comments and information from a specific post.
      * 
      * @param post_id       ID from which the post belongs.
@@ -461,6 +528,67 @@ public:
             std::cerr << "JSON type error: " << e.what() << std::endl;
         }
 
+        return std::make_pair(post, comments);
+    }
+
+    /**
+     * @brief Gets the comments and information from a specific post from an authenticated user.
+     * 
+     * @param post_id       ID from which the post belongs.
+     * @param get_comments  Boolean value of whether to retrieve comments or not.
+     * @param commentSort   Comment sort direction (default TOP, optionally
+     *                      CONTROVERSIAL, NEW, and OLD. 
+     *
+     * @return A std::pair, first of the post, second containing a vector of comments.
+     */
+    std::pair<nlohmann::json, std::vector<nlohmann::json>> getPostAuth(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=TOP) {
+        std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
+
+        nlohmann::json post;
+        std::vector<nlohmann::json> comments;
+
+        if (get_comments) {
+            // post with no comments
+            base_url += "&comments=true";
+        }
+
+        if (commentSort == CONTROVERSIAL || commentSort == NEW || commentSort == OLD) {
+            // will use default commentSort method if invalid value is entered
+            // different from post sort, where it's required for the query and fails
+            // if an invalid value is entered
+            base_url += "&commentSort=" + commentSort;
+        }
+
+        // cout << base_url << endl << endl;
+
+        string jsonDataStr = this->GETRequestAuth(base_url);
+        
+        if (jsonDataStr == "") {
+            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            return std::make_pair(post, comments);
+        }
+
+        try {
+            nlohmann::json all_json_data = nlohmann::json::parse(jsonDataStr);
+
+            if (all_json_data.contains("posts")) {
+                // posts is plural but there should only be one
+                post = all_json_data["posts"][0];
+            }
+
+            if (all_json_data.contains("comments") && all_json_data["comments"].is_array()) {
+                const auto& json_comments = all_json_data["comments"];
+
+                for (const auto& comment : json_comments) {
+                    // add to post comment vector
+                    comments.push_back(comment);
+                }
+            }
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        } catch (const nlohmann::json::type_error& e) {
+            std::cerr << "JSON type error: " << e.what() << std::endl;
+        }
 
         return std::make_pair(post, comments);
     }
