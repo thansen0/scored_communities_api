@@ -15,6 +15,7 @@
 // From nlohmann/json
 #include "json.hpp"
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <utility> // std::pair
 #include <curl/curl.h>
@@ -38,6 +39,8 @@
 
 #define TRENDING        "win&isTrendingTopics=true&trendingTopics=%5B%5D"
 #define HOME            "Home"
+
+#define DEBUG           false
 
 using namespace std;
 
@@ -101,24 +104,31 @@ private:
         CURL* curl = curl_easy_init();
         std::string response;
 
-        if (curl) {
-            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-            // curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
-            // Perform the request
-            CURLcode res = curl_easy_perform(curl);
-            if (res != CURLE_OK) {
-                std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
-            }
-
-            // Clean up
-            curl_easy_cleanup(curl);
-        } else {
-            std::cerr << "Failed to initialize CURL." << std::endl;
-            // TODO add check for curl cleanup
+        if (!curl) {
+            std::cerr << "Failed to init curl\n";
+            return response;
         }
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        // curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        // Perform the request
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
+        } else {
+            if (DEBUG) {
+                long http_code = 0;
+                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+                std::cout << "GETRequest HTTP Response Code: " << http_code << std::endl;
+            }
+        }
+
+        // Clean up
+        curl_easy_cleanup(curl);
 
         return response;
     }
@@ -141,36 +151,97 @@ private:
             return response;
         } 
 
-        if (curl) {
-            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-            // curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
-            // add api key headers
-            headers = curl_slist_append(headers,
-                    string("x-api-key: ").append(this->public_key).c_str()
-            );
-            headers = curl_slist_append(headers,
-                    string("x-api-secret: ").append(this->private_key).c_str()
-            );
-
-            // attach header to curl object 
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-            // Perform the request
-            CURLcode res = curl_easy_perform(curl);
-            if (res != CURLE_OK) {
-                std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
-                return response;
-            }
-
-            // Clean up
-            curl_slist_free_all(headers);
-            curl_easy_cleanup(curl);
-        } else {
-            std::cerr << "Failed to initialize CURL." << std::endl;
+        if (!curl) {
+            std::cerr << "Failed to init curl\n";
+            return response;
         }
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        // curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        // add api key headers
+        headers = curl_slist_append(headers,
+                string("x-api-key: ").append(this->public_key).c_str()
+        );
+        headers = curl_slist_append(headers,
+                string("x-api-secret: ").append(this->private_key).c_str()
+        );
+
+        // attach header to curl object 
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+        // Perform the request
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
+            return response;
+        } else {
+            if (DEBUG) {
+                long http_code = 0;
+                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+                std::cout << "GETRequestAuth HTTP Response Code: " << http_code << std::endl;
+            }
+        }
+
+        // Clean up
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+
+        return response;
+    }
+
+    /**
+     * @brief Performs a POST request using libcurl, and passes through api keys.
+     * 
+     * @param url The complete URL to perform the POST request on.
+     *
+     * @return A string of the response, or an empty string in the case of an error.
+     */
+    std::string POSTRequestAuth(const std::string& url, const std::string& parameters) {
+        std::string response;
+        struct curl_slist* headers = nullptr;
+
+        CURL* curl = curl_easy_init();
+        if (!curl) {
+            std::cerr << "Failed to init curl\n";
+            return response;
+        }
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
+        // set for POST request
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, parameters.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long) parameters.length());
+
+        // add api key headers
+        headers = curl_slist_append(headers,
+                string("x-api-key: ").append(this->public_key).c_str()
+        );
+        headers = curl_slist_append(headers,
+                string("x-api-secret: ").append(this->private_key).c_str()
+        );
+
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << '\n';
+        } else {
+            if (DEBUG) {
+                long http_code = 0;
+                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+                std::cout << "POSTRequestAuth HTTP Response Code: " << http_code << std::endl;
+            }
+        }
+
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
 
         return response;
     }
@@ -183,73 +254,75 @@ private:
      *
      * @return A string containing just the token, or an empty string in the case of an error.
      */
-    std::string POSTRequestForLTSCookie(const std::string& url, const std::string parameters) {
+    std::string POSTRequestForLTSCookie(const std::string parameters) {
         CURL* curl = curl_easy_init();
         std::string response;
         HeaderMap responseHeaders;
 
-        char LTS_cookie[50]; // I think this can just be 44 but rounding up
+        char LTS_cookie[50]; // I think this could just be 44 but rounded up
 
-        if(curl) {
-            CURLcode res;
+        if (!curl) {
+            std::cerr << "Failed to init curl\n";
+            return response;
+        }
 
-            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-            curl_easy_setopt(curl, CURLOPT_POST, 1L);
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, parameters.c_str());
+        CURLcode res;
 
-            // If you need to set headers, e.g., Content-Type
-            struct curl_slist* headers = NULL;
-            headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded"); // "Content-Type: application/json");
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_URL, "https://api.scored.co/api/v2/user/login");
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, parameters.c_str());
 
-            // Set up the callback to receive the response
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        struct curl_slist* headers = NULL;
+        headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded"); // "Content-Type: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-            curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback);
-            curl_easy_setopt(curl, CURLOPT_HEADERDATA, &responseHeaders);
+        // Set up the callback to receive the response
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
-            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L); // 5 seconds
-            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &responseHeaders);
 
-            res = curl_easy_perform(curl);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L); // 5 seconds
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+        res = curl_easy_perform(curl);
 
 
-            // Check for errors
-            if(res != CURLE_OK) {
-                std::cerr << "curl_easy_perform() failed: " 
-                          << curl_easy_strerror(res) << std::endl;
-            } else {
+        // Check for errors
+        if(res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " 
+                      << curl_easy_strerror(res) << std::endl;
+        } else {
+            if (DEBUG) {
                 long http_code = 0;
                 curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-                // Add to debug TODO
-                // std::cout << "LTS Token HTTP Response Code: " << http_code << std::endl;
 
-                // std::cout << "Response Body: " << response << std::endl;
-
-                auto it = responseHeaders.find("set-cookie");
-                if(it != responseHeaders.end()) {
-                    for(const std::string& cookie : it->second) {
-                        // std::cout << "LTS header: " << cookie << std::endl;
-                        if (cookie[0] == 'L' && cookie[1] == 'T' && cookie[2] == 'S') {
-                            size_t LTS_token_end = cookie.find(';') - 4;
-                            std::memcpy(LTS_cookie, cookie.c_str() + 4, LTS_token_end);
-
-                            LTS_cookie[LTS_token_end+1] = '\0';
-                            break;
-                        }
-                    }
-                } else {
-                    std::cerr << "Set-Cookie Header not found." << std::endl;
-                }
+                std::cout << "POSTRequestForLTSCookie HTTP Response Code: " << http_code << std::endl;
             }
 
-            // Clean up
-            curl_slist_free_all(headers);
-            curl_easy_cleanup(curl);
-        } else {
-            std::cerr << "Failed to initialize CURL." << std::endl;
+            // std::cout << "Response Body: " << response << std::endl;
+
+            auto it = responseHeaders.find("set-cookie");
+            if(it != responseHeaders.end()) {
+                for(const std::string& cookie : it->second) {
+                    // std::cout << "LTS header: " << cookie << std::endl;
+                    if (cookie[0] == 'L' && cookie[1] == 'T' && cookie[2] == 'S') {
+                        size_t LTS_token_end = cookie.find(';') - 4;
+                        std::memcpy(LTS_cookie, cookie.c_str() + 4, LTS_token_end);
+
+                        LTS_cookie[LTS_token_end+1] = '\0';
+                        break;
+                    }
+                }
+            } else {
+                std::cerr << "Set-Cookie Header not found." << std::endl;
+            }
         }
+
+        // Clean up
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
 
         return std::string(LTS_cookie);
     }
@@ -262,7 +335,7 @@ private:
      *
      * @return JSON string containing public and private keys
      */
-    std::string POSTRequestForKeys(const std::string& url, std::string lts_token) {
+    std::string POSTRequestForKeys(std::string lts_token) {
         std::string response;
 
         CURL* curl = curl_easy_init();
@@ -278,12 +351,12 @@ private:
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
-        // If you need an empty body, set this:
-        // (No form fields or JSON data needed, so a zero-length body)
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0L);
 
-        // Provide the cookie header string
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L); // 5 seconds
+
+        // provide the cookie header string
         // e.g. "LTS=XYZ; XSRF-TOKEN=ABC; WSID01=DEF"
         lts_token = "LTS=" + lts_token;
         curl_easy_setopt(curl, CURLOPT_COOKIE, lts_token.c_str());
@@ -291,6 +364,13 @@ private:
         CURLcode res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << '\n';
+        } else {
+            if (DEBUG) {
+                long http_code = 0;
+                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+                std::cout << "POSTRequestForKeys HTTP Response Code: " << http_code << std::endl;
+            }
         }
 
         curl_easy_cleanup(curl);
@@ -310,13 +390,11 @@ public:
         std::string url = "https://api.scored.co/api/v2/user/login";
         std::string parameters = "username=" + username + "&password=" + password;
 
-        std::string LTS_token = POSTRequestForLTSCookie(url, parameters);
+        std::string LTS_token = POSTRequestForLTSCookie(parameters);
 
         // cout << LTS_token << endl;
 
-        url = "https://api.scored.co/api/v2/token";
-
-        std::string jsonDataStr = POSTRequestForKeys(url, LTS_token);
+        std::string jsonDataStr = POSTRequestForKeys(LTS_token);
 
         // cout << jsonDataStr << endl;
 
@@ -672,6 +750,47 @@ public:
         }
 
         return user_data;
+    }
+
+    nlohmann::json sendVote(const int post_id, const bool isPost, const bool voteDirection) {
+        nlohmann::json vote_data;
+        string url = "https://api.scored.co/api/v2/action/vote";
+
+        stringstream ss;
+        ss << "id=" << post_id
+                << "&type=" << (isPost ? "true" : "false")
+                << "&direction=" << (voteDirection ? "true" : "false");
+        string parameters = ss.str();
+
+        string jsonDataStr = POSTRequestAuth(url, parameters);
+        cout << jsonDataStr << endl << endl;
+
+        if (jsonDataStr == "") {
+            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            return vote_data;
+        }
+
+        try {
+            nlohmann::json all_json_data = nlohmann::json::parse(jsonDataStr);
+
+            if (!all_json_data.value("status", false)) {
+                // POST request has failed, return empty json
+                std::cerr << "Error finding user" << std::endl;
+                return vote_data;
+            }
+
+            /*if (all_json_data.contains("users") && all_json_data["users"].size() > 0) {
+                // should be an array of one user (i.e. the user we want)
+                vote_data = all_json_data["users"][0];
+            }*/
+
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        } catch (const nlohmann::json::type_error& e) {
+            std::cerr << "JSON type error: " << e.what() << std::endl;
+        }
+
+        return vote_data;
     }
 
 };

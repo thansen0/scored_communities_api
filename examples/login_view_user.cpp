@@ -23,25 +23,25 @@ int main(int argc, char *argv[]) {
         std::cin >> password;
     }
 
-    ScoredCoApi a(username, password);
+    ScoredCoApi user(username, password);
 
     // by default, it grabs the signed in user. You may pass in
     // any username you like however
-    json user = a.getUser();
+    json userData = user.getUser();
 
     // prints out all json data
-    cout << user << endl;
+    cout << userData << endl;
 
     // user will be empty if none exists
-    if (user != nullptr && !user.empty()) {
-        if (user.value("is_suspended", false)) {
+    if (userData != nullptr && !userData.empty()) {
+        if (userData.value("is_suspended", false)) {
             std::cout << "This user is suspended." << std::endl;
         }
 
-        std::cout << "A list of the first ten communities user " << user.value("username", "") << " is subscribed to:" << std::endl << std::endl;
+        std::cout << "A list of the first ten communities user " << userData.value("username", "") << " is subscribed to:" << std::endl << std::endl;
 
         int i = 0;
-        for (nlohmann::json com : user["subscribed"]) {
+        for (nlohmann::json com : userData["subscribed"]) {
             std::cout << ++i << ": " << com << std::endl;
 
             if (i >= 10)
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    vector<json> feed = a.getFeed();
+    vector<json> feed = user.getFeed();
 
     if (feed.size() == 0) {
         cout << "Feed is empty" << endl;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
 
     int post_id = feed[0].value("id", 0);
 
-    pair<json, vector<json>> post = a.getPost(post_id);
+    pair<json, vector<json>> post = user.getPost(post_id);
 
     // print out post id I got above and post contents
     cout << "Post id: " << post_id << " has " << post.second.size() << " comments." << endl;
