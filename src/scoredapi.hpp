@@ -378,15 +378,8 @@ private:
         return response;
     }
 
-protected:
-    //vector<nlohmann::json> post_list;
-    // int cur_idx;
-
 public:
     ScoredCoApi(std::string username="", std::string password="") {
-        // Incase the user sets up an iterator
-        //cur_idx = 0;
-
         if (username != "" && password != "") {
             this->setUsernamePassword(username, password);
         }
@@ -899,6 +892,14 @@ public:
     iterator end() { return iterator(this, 10); } 
     */ 
 
+
+    /*
+     * @brief Contains all of the logic for creating a FeedBuilder
+     * 
+     * FeedBuilder is meant to automatically extend the feed as you read from it,
+     * allowing for a more seemless feed experience.
+     * 
+     */
     class FeedBuilder {
     private:
         ScoredCoApi* parent;
@@ -908,13 +909,8 @@ public:
         bool appSafe;
 
         size_t expandFeed() {
-            // TODO maybe set post_list_size at beginning of feed, then fix at end
-            // to make threading issue better
-
             vector<nlohmann::json> new_posts;
-            // cout << "Expanding list idx " << cur_idx << ", size: " << post_list.size() << endl;
 
-            // This function should expand whatever list I'm using to hold the feed
             if (post_list.size() == 0) {
                 new_posts = parent->getFeed(community, sort_dir, appSafe);
             } else {
@@ -924,9 +920,6 @@ public:
                 new_posts = parent->getFeed(community, sort_dir, appSafe, post_uuid);
             }
 
-            // cout << "new post size: " << new_posts.size() << endl;
-
-            // TODO this may add duplicate posts for the end of cur and start of new
             post_list.insert(post_list.end(), new_posts.begin(), new_posts.end());
 
             if (DEBUG) {
@@ -951,9 +944,9 @@ public:
             // ending loop, update for next loop
             itr_window += window_size;
 
-            // cout << itr_window << ", " << post_list.size() << " <= " << (cur_idx + window_size) << endl;
+            // cout << post_list.size() << " <= " << (cur_idx + window_size) << endl;
             if (post_list.size() <= (cur_idx + window_size)) {
-                // put in new thread
+                // TODO add to new detached thread
                 this->expandFeed();
             }
             return false;
@@ -965,6 +958,16 @@ public:
 
     };
 
+    /**
+     * @brief Creates a FeedBuilder object.
+     * 
+     * @param window        How many posts will be returned before feed pause.
+     * @param community     The community you would like to read from.
+     * @param sort          Sorting method, choose from HOT, NEW, ACTIVE, RISING, or TOP.
+     * @param appSafe       Whether the community is safe for the app store.
+     *
+     * @return FeedBuilder  Object which can be used to obtain posts in a feed.
+     */
     FeedBuilder buildFeed(int window=10, const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false) {
         return FeedBuilder(this, window, community, sort, appSafe);
     }
