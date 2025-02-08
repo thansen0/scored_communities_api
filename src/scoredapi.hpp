@@ -378,8 +378,15 @@ private:
         return response;
     }
 
+protected:
+    //vector<nlohmann::json> post_list;
+    // int cur_idx;
+
 public:
     ScoredCoApi(std::string username="", std::string password="") {
+        // Incase the user sets up an iterator
+        //cur_idx = 0;
+
         if (username != "" && password != "") {
             this->setUsernamePassword(username, password);
         }
@@ -410,9 +417,9 @@ public:
             }
 
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "setUsernamePassword JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "setUsernamePassword JSON type error: " << e.what() << std::endl;
         }
 
         // printf("pub_key:  %s \npriv_key: %s", this->public_key, this->private_key);
@@ -477,9 +484,9 @@ public:
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "getFeedPublic JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "getFeedPublic JSON type error: " << e.what() << std::endl;
         }
 
         return scored_feed;
@@ -523,7 +530,7 @@ public:
         string jsonDataStr = this->GETRequestAuth(base_url);
 
         if (jsonDataStr == "") {
-            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            std::cerr << "getFeed GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
             return scored_feed;
         }
 
@@ -544,9 +551,9 @@ public:
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "getFeed JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "getFeed JSON type error: " << e.what() << std::endl;
         }
 
         return scored_feed;
@@ -601,9 +608,9 @@ public:
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "getPostPublic JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "getPostPublic JSON type error: " << e.what() << std::endl;
         }
 
         return std::make_pair(post, comments);
@@ -642,7 +649,7 @@ public:
         string jsonDataStr = this->GETRequestAuth(base_url);
         
         if (jsonDataStr == "") {
-            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            std::cerr << "getPost GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
             return std::make_pair(post, comments);
         }
 
@@ -663,9 +670,9 @@ public:
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "getPost JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "getPost JSON type error: " << e.what() << std::endl;
         }
 
         return std::make_pair(post, comments);
@@ -702,9 +709,9 @@ public:
             }
 
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "getUserPublic JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "getUserPublic JSON type error: " << e.what() << std::endl;
         }
 
         return user_data;
@@ -725,7 +732,7 @@ public:
         string jsonDataStr = this->GETRequestAuth(base_url);
 
         if (jsonDataStr == "") {
-            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            std::cerr << "getUser GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
             return user_data;
         }
 
@@ -744,9 +751,9 @@ public:
             }
 
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "getUser JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "getUser JSON type error: " << e.what() << std::endl;
         }
 
         return user_data;
@@ -766,7 +773,7 @@ public:
         cout << jsonDataStr << endl << endl;
 
         if (jsonDataStr == "") {
-            std::cerr << "GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
+            std::cerr << "sendVote GET Request failed; possibly not signed in or not connected to the internet" << std::endl;
             return vote_data;
         }
 
@@ -785,12 +792,181 @@ public:
             }*/
 
         } catch (const nlohmann::json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
+            std::cerr << "sendVote JSON parsing error: " << e.what() << std::endl;
         } catch (const nlohmann::json::type_error& e) {
-            std::cerr << "JSON type error: " << e.what() << std::endl;
+            std::cerr << "sendVote JSON type error: " << e.what() << std::endl;
         }
 
         return vote_data;
+    }
+
+    /* 
+     * I'm leaving the iterator here for now as a reference, however I don't think
+     * it will stay. I had too much trouble maintaining a window to iterate over
+     * however it does currently iterate infinitely, which is kind of neat.
+     *
+    class iterator {
+    private:
+        ScoredCoApi* parent;
+        int itr_window;
+        vector<nlohmann::json>* post_list; 
+
+        string sort_dir, community;
+        bool appSafe;
+        int* cur_idx;
+
+        size_t expandFeed() {
+            // TODO maybe set post_list_size at beginning of feed, then fix at end
+            // to make threading issue better
+
+            vector<nlohmann::json> new_posts;
+            cout << "Expanding list idx " << *cur_idx << ", size: " << post_list->size() << endl;
+
+            // This function should expand whatever list I'm using to hold the feed
+            if (post_list->size() == 0) {
+                new_posts = parent->getFeed(community, sort_dir, appSafe);
+            } else {
+                // post list exists, get 
+                nlohmann::json final_post = post_list->back();
+                string post_uuid = final_post.value("uuid", "");
+                new_posts = parent->getFeed(community, sort_dir, appSafe, post_uuid);
+            }
+
+            cout << "new post size: " << new_posts.size() << endl;
+
+            // TODO this may add duplicate posts for the end of cur and start of new
+            post_list->insert(post_list->end(), new_posts.begin(), new_posts.end());
+
+            cout << "post list size: " << post_list->size() << endl;
+
+            return post_list->size();
+        }
+
+    public:
+        explicit iterator(ScoredCoApi* parent, const int window=10, const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false) 
+                : parent(parent), itr_window(window), community(community), sort_dir(sort), appSafe(appSafe) {
+            cur_idx = &parent->cur_idx;
+            post_list = &parent->post_list;
+            if (post_list->size() <= itr_window) {
+                this->expandFeed();
+            }
+        }
+        
+        const nlohmann::json& operator*() const {
+            if (*cur_idx >= post_list->size()) {
+                // return nlohmann::json::object();
+                throw std::out_of_range("Index out of range on * operator override");
+            }
+            return (*post_list)[*cur_idx];
+        }
+        
+        // friend makes sure the iterator user has access to operator, although
+        // may not be needed here
+        // friend bool operator==(const iterator& a, const iterator& b) { return a.current["value"] == b.current["value"]; }
+        // friend bool operator!=(const iterator& a, const iterator& b) { return a.current["value"] != b.current["value"]; }
+        // may not be a good way to compare...
+        friend bool operator==(const iterator& a, const iterator& b) { return *(a.cur_idx) == b.post_list->size(); }
+        friend bool operator!=(const iterator& a, const iterator& b) { return *(a.cur_idx) != b.post_list->size(); }
+        
+        // pre-increment
+        iterator& operator++() { 
+            // Here you should put your logic to increment the current object, for example:
+            // ++current;
+            // current["value"] = current["value"].get<int>() + 1;
+            if (post_list->size() > *cur_idx + itr_window) {
+                // expand list
+                this->expandFeed();
+            }
+
+            ++(*cur_idx);
+            cout << "index " << *cur_idx << endl;
+            return *this;
+        }
+        
+        // post-increment
+        iterator operator++(int) {
+            iterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+    };
+
+    /* TODO iterator failing because begin and end are the
+     * same. End should reflect end of vector, and/or ==/!=
+     * operators should not use index
+     *
+    iterator begin() { return iterator(this, 10); }
+    iterator end() { return iterator(this, 10); } 
+    */ 
+
+    class FeedBuilder {
+    private:
+        ScoredCoApi* parent;
+        int itr_window, window_size, cur_idx;
+        vector<nlohmann::json> post_list;
+        string community, sort_dir;
+        bool appSafe;
+
+        size_t expandFeed() {
+            // TODO maybe set post_list_size at beginning of feed, then fix at end
+            // to make threading issue better
+
+            vector<nlohmann::json> new_posts;
+            // cout << "Expanding list idx " << cur_idx << ", size: " << post_list.size() << endl;
+
+            // This function should expand whatever list I'm using to hold the feed
+            if (post_list.size() == 0) {
+                new_posts = parent->getFeed(community, sort_dir, appSafe);
+            } else {
+                // post list exists, get 
+                nlohmann::json final_post = post_list.back();
+                string post_uuid = final_post.value("uuid", "");
+                new_posts = parent->getFeed(community, sort_dir, appSafe, post_uuid);
+            }
+
+            // cout << "new post size: " << new_posts.size() << endl;
+
+            // TODO this may add duplicate posts for the end of cur and start of new
+            post_list.insert(post_list.end(), new_posts.begin(), new_posts.end());
+
+            if (DEBUG) {
+                cout << "Updated post_list size: " << post_list.size() << endl;
+            }
+
+            return post_list.size();
+        }
+
+    public:
+        FeedBuilder(ScoredCoApi* parent, int window=10, const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false)
+                : parent(parent), itr_window(window), window_size(window), community(community), sort_dir(sort), appSafe(appSafe), cur_idx(0) {
+            // will always be empty on initialization
+            this->expandFeed();
+        }
+
+        bool hasNext() {
+            if (cur_idx < itr_window) {
+                return true;
+            }
+
+            // ending loop, update for next loop
+            itr_window += window_size;
+
+            // cout << itr_window << ", " << post_list.size() << " <= " << (cur_idx + window_size) << endl;
+            if (post_list.size() <= (cur_idx + window_size)) {
+                // put in new thread
+                this->expandFeed();
+            }
+            return false;
+        }
+
+        nlohmann::json next() {
+            return post_list[cur_idx++];
+        }
+
+    };
+
+    FeedBuilder buildFeed(int window=10, const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false) {
+        return FeedBuilder(this, window, community, sort, appSafe);
     }
 
 };

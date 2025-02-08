@@ -61,7 +61,26 @@ Posts (and comments) are returned as json objects, courtesy of `nlohmann/json`. 
 
 ## Library Sign-in
 
-A more feature-rich experience is using the class creator to pass in a `username` and `password`. Unfortunately it's still a work in progress, and is not available on the current version.
+You can create an object and sign in by creating a `ScoredCoApi` object.
+
+```C++
+ScoredCoApi user(username, password);
+
+vector<nlohmann::json> page1 = user.getFeed("funny", HOT, false);
+```
+
+You may also build a `FeedBuilder` object, which will automatically expand the feed as you read from it. Calling the hasNext() function checks for the feed size, and will expand the internal vector as required.
+
+```C++
+ScoredCoApi user(username, password);
+
+ScoredCoApi::FeedBuilder fb = user.buildFeed(8);
+
+while (fb.hasNext()) {
+    nlohmann::json cur = fb.next();
+    cout << cur.value("title", "") << endl;
+}
+```
 
 # LICENSE
 
