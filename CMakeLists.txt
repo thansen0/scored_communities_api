@@ -1,30 +1,68 @@
 cmake_minimum_required(VERSION 3.18)
 
+project(scored_communities_api LANGUAGES CXX)
+
+# ----- Options ---------------------------------------------------------------
+# Build examples only when this repo is the top-level, unless explicitly toggled.
+set(_default_build_examples OFF)
+if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(_default_build_examples ON)
+endif()
+option(SCOREDCOAPI_BUILD_EXAMPLES "Build scored_communities_api examples" ${_default_build_examples})
+
+# C++ standard as a usage requirement for consumers (since we're header-only).
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-project(ScoredCoAPI)
-
-# Find libcurl package for ScoredCoApi header
+# ----- Dependencies ----------------------------------------------------------
 find_package(CURL REQUIRED)
 
-# library target for scored API and json headers
-add_library(ApiHeaders INTERFACE)
+# ----- Library target (header-only) ------------------------------------------
+add_library(scoredcoapi INTERFACE)
 
-# Specify include directories for the headers. This makes them available to
-# targets. On your project you may place these in the include folder
-target_include_directories(ApiHeaders INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+target_compile_options(scoredcoapi INTERFACE -Wall -Wextra -pedantic -Wno-comment)
+
+# Public (interface) usage requirements:
+#  - consumers get include dir
+target_include_directories(scoredcoapi
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:include> # for install() rules
+)
+#  - consumers get CURL::libcurl
+target_link_libraries(scoredcoapi
+  INTERFACE
+    CURL::libcurl
+)
+#  - consumers get c++17 requirement
+target_compile_features(scoredcoapi
+  INTERFACE
+    cxx_std_17
 )
 
-# We want to make sure each file in the examples folder is built
-# any .cpp file in examples/ will be turned into a stand-alone binary
-file(GLOB EXAMPLES_FILES examples/*.cpp)
+# Provide a namespaced alias for nicer consumption.
+add_library(scoredco::api ALIAS scoredcoapi)
 
-foreach(EXAMPLES_FILE ${EXAMPLES_FILES})
-    # Set filename to TARGET_NAME
-    get_filename_component(TARGET_NAME ${EXAMPLES_FILE} NAME_WE)
-    add_executable(${TARGET_NAME} ${EXAMPLES_FILE})
+# ----- Examples (optional) ---------------------------------------------------
+if (SCOREDCOAPI_BUILD_EXAMPLES)
+  file(GLOB EXAMPLES_FILES CONFIGURE_DEPENDS examples/*.cpp)
+  foreach(EXAMPLES_FILE IN LISTS EXAMPLES_FILES)
+    get_filename_component(TARGET_NAME "${EXAMPLES_FILE}" NAME_WE)
+    add_executable(${TARGET_NAME} "${EXAMPLES_FILE}")
+    target_link_libraries(${TARGET_NAME} PRIVATE scoredco::api)
+    # If examples need extra warnings or flags, add them here.
+  endforeach()
+endif()
 
-    # link and build executable
-    target_link_libraries(${TARGET_NAME} PRIVATE ApiHeaders CURL::libcurl)
-endforeach()
+# ----- (Optional) Install/export scaffold ------------------------------------
+# Enables `find_package(scored_communities_api)` support.
+include(GNUInstallDirs)
+install(TARGETS scoredcoapi
+  EXPORT scoredcoapiTargets
+)
+install(DIRECTORY src/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(EXPORT scoredcoapiTargets
+  NAMESPACE scoredco::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/scored_communities_api
+)

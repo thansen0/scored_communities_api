@@ -931,7 +931,7 @@ public:
 
     public:
         FeedBuilder(ScoredCoApi* parent, int window=10, const std::string community=TRENDING, const std::string sort=HOT, const bool appSafe=false)
-                : parent(parent), itr_window(window), window_size(window), community(community), sort_dir(sort), appSafe(appSafe), cur_idx(0) {
+                : parent(parent), itr_window(window), window_size(window), cur_idx(0), community(community), sort_dir(sort), appSafe(appSafe) {
             // will always be empty on initialization
             this->expandFeed();
         }
@@ -945,7 +945,7 @@ public:
             itr_window += window_size;
 
             // cout << post_list.size() << " <= " << (cur_idx + window_size) << endl;
-            if (post_list.size() <= (cur_idx + window_size)) {
+            if (post_list.size() <= static_cast<size_t>(cur_idx + window_size)) {
                 // TODO add to new detached thread
                 this->expandFeed();
             }
