@@ -5,6 +5,8 @@
 #include "scoredapi.hpp"
 #include "json.hpp"
 
+using namespace scoredapi;
+
 int main() {
     // we will get the Admin user C
     nlohmann::json user = ScoredCoApi::getUserPublic("c");

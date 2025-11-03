@@ -11,7 +11,7 @@ endif()
 option(SCOREDCOAPI_BUILD_EXAMPLES "Build scored_communities_api examples" ${_default_build_examples})
 
 # C++ standard as a usage requirement for consumers (since we're header-only).
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -35,10 +35,10 @@ target_link_libraries(scoredcoapi
   INTERFACE
     CURL::libcurl
 )
-#  - consumers get c++17 requirement
+#  - consumers get c+20 requirement
 target_compile_features(scoredcoapi
   INTERFACE
-    cxx_std_17
+    cxx_std_20
 )
 
 # Provide a namespaced alias for nicer consumption.

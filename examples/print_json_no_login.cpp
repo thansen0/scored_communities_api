@@ -5,8 +5,10 @@
 #include "scoredapi.hpp"
 #include "json.hpp"
 
+using namespace scoredapi;
+
 int main() {
-    vector<nlohmann::json> page1 = ScoredCoApi::getFeedPublic(TRENDING, HOT, false);
+    vector<nlohmann::json> page1 = ScoredCoApi::getFeedPublic(TRENDING, SORT_HOT, false);
 
     if (page1.size() > 0) {
         // print page

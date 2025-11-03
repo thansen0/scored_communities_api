@@ -7,6 +7,8 @@
 using namespace std;
 using namespace nlohmann;
 
+using namespace scoredapi;
+
 int main(int argc, char *argv[]) {
     string username, password;
 
