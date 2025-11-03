@@ -22,39 +22,28 @@
 
 namespace scoredapi {
 
+using namespace std;
+using HeaderMap = std::map<std::string, std::vector<std::string>>;
+
 // All the different sort options for feeds
 // https://docs.scored.co/api/feeds/getting-started#sort-options
-#define SORT_HOT             "hot"
-#define SORT_NEW             "new"
-#define SORT_ACTIVE          "active"
-#define SORT_RISING          "rising"
-#define SORT_TOP             "top"
-// constexpr std::string SORT_HOT{"hot"};
-// constexpr std::string SORT_NEW{"new"};
-// constexpr std::string SORT_ACTIVE{"active"};
-// constexpr std::string SORT_RISING{"rising"};
-// constexpr std::string SORT_TOP{"top"};
+constexpr std::string_view SORT_HOT{"hot"};
+constexpr std::string_view SORT_NEW{"new"};
+constexpr std::string_view SORT_ACTIVE{"active"};
+constexpr std::string_view SORT_RISING{"rising"};
+constexpr std::string_view SORT_TOP{"top"};
 
 // Comment sort methods
-// #define TOP             "top"
-#define SORT_CONTROVERSIAL   "controversial"
-// #define NEW             "new"
-#define SORT_OLD             "old"
-// constexpr std::string SORT_CONTROVERSIAL{"controversial"};
-// constexpr std::string SORT_OLD{"old"};
+// constexpr std::string_view SORT_TOP{"top"};
+constexpr std::string_view SORT_CONTROVERSIAL{"controversial"};
+// constexpr std::string_view SORT_NEW{"new"};
+constexpr std::string_view SORT_OLD{"old"};
 
-
-#define TRENDING        "win&isTrendingTopics=true&trendingTopics=%5B%5D"
-#define HOME            "Home"
-// constexpr std::string TRENDING{"win&isTrendingTopics=true&trendingTopics=%5B%5D"};
-// constexpr std::string HOME{"Home"};
+// Sorting communities
+constexpr std::string_view TRENDING{"win&isTrendingTopics=true&trendingTopics=%5B%5D"};
+constexpr std::string_view HOME{"Home"};
 
 #define DEBUG           false
-// constexpr bool DEBUG{false};
-
-using namespace std;
-
-using HeaderMap = std::map<std::string, std::vector<std::string>>;
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     size_t totalSize = size * nmemb;
@@ -444,10 +433,10 @@ public:
      *
      * @return A JSON object containing relevant data.
      */
-    static vector<nlohmann::json> getFeedPublic(const std::string community=TRENDING, const std::string sort=SORT_HOT, const bool appSafe=false, const std::string post_uuid="") {
+    static vector<nlohmann::json> getFeedPublic(const std::string_view community=TRENDING, const std::string_view sort=SORT_HOT, const bool appSafe=false, const std::string post_uuid="") {
 
         std::vector<nlohmann::json> scored_feed;
-        std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
+        std::string base_url = string{"https://api.scored.co/api/v2/post/"}.append(sort) + string{"v2.json?community="}.append(community);
 
         // sanatize sort input
         // if (validCommentSorts.find(sort) == validCommentSorts.end()) {
@@ -506,17 +495,16 @@ public:
      *
      * @return A JSON object containing relevant data.
      */
-    vector<nlohmann::json> getFeed(const std::string community=TRENDING, const std::string sort=SORT_HOT, const bool appSafe=false, const std::string post_uuid="") {
-
+    vector<nlohmann::json> getFeed(const std::string_view community=TRENDING, const std::string_view sort=SORT_HOT, const bool appSafe=false, const std::string post_uuid="") {
         std::vector<nlohmann::json> scored_feed;
-        std::string base_url = "https://api.scored.co/api/v2/post/" + sort + "v2.json?community=" + community;
 
         // sanatize sort input
-        // if (validCommentSorts.find(sort) == validCommentSorts.end()) {
         if (!(SORT_HOT == sort || SORT_NEW == sort || SORT_ACTIVE == sort || SORT_RISING == sort || SORT_TOP == sort)) {
             cerr << "\"" << sort << "\" value not valid for feed sorting. Returning empty vector";
             return scored_feed;
         }
+
+        std::string base_url = string{"https://api.scored.co/api/v2/post/"}.append(sort) + string{"v2.json?community="}.append(community);
 
         if (!post_uuid.empty()) {
             // set pagination if not on first page
@@ -572,7 +560,7 @@ public:
      *
      * @return A std::pair, first of the post, second containing a vector of comments.
      */
-    static std::pair<nlohmann::json, std::vector<nlohmann::json>> getPostPublic(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=SORT_TOP) {
+    static std::pair<nlohmann::json, std::vector<nlohmann::json>> getPostPublic(const unsigned int post_id, const std::string_view commentSort=SORT_TOP, const bool get_comments=true) {
         std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
 
         nlohmann::json post;
@@ -587,7 +575,7 @@ public:
             // will use default commentSort method if invalid value is entered
             // different from post sort, where it's required for the query and fails
             // if an invalid value is entered
-            base_url += "&commentSort=" + commentSort;
+            base_url += std::string{"&commentSort="}.append(commentSort);
         }
 
         // cout << base_url << endl << endl;
@@ -629,7 +617,7 @@ public:
      *
      * @return A std::pair, first of the post, second containing a vector of comments.
      */
-    std::pair<nlohmann::json, std::vector<nlohmann::json>> getPost(const unsigned int post_id, const bool get_comments=true, const std::string commentSort=SORT_TOP) {
+    std::pair<nlohmann::json, std::vector<nlohmann::json>> getPost(const unsigned int post_id, const std::string_view commentSort=SORT_TOP, const bool get_comments=true) {
         std::string base_url = "https://api.scored.co/api/v2/post/post.json?id=" + std::to_string(post_id);
 
         nlohmann::json post;
@@ -644,7 +632,7 @@ public:
             // will use default commentSort method if invalid value is entered
             // different from post sort, where it's required for the query and fails
             // if an invalid value is entered
-            base_url += "&commentSort=" + commentSort;
+            base_url += string{"&commentSort="}.append(commentSort);
         }
 
         // cout << base_url << endl << endl;
@@ -940,7 +928,7 @@ public:
         }
 
     public:
-        FeedBuilder(ScoredCoApi* parent, int window=10, const std::string community=TRENDING, const std::string sort=SORT_HOT, const bool appSafe=false)
+        FeedBuilder(ScoredCoApi* parent, int window=10, const std::string_view community=TRENDING, const std::string_view sort=SORT_HOT, const bool appSafe=false)
                 : parent(parent), itr_window(window), window_size(window), cur_idx(0), community(community), sort_dir(sort), appSafe(appSafe) {
             // will always be empty on initialization
             this->expandFeed();
@@ -978,7 +966,7 @@ public:
      *
      * @return FeedBuilder  Object which can be used to obtain posts in a feed.
      */
-    FeedBuilder buildFeed(int window=10, const std::string community=TRENDING, const std::string sort=SORT_HOT, const bool appSafe=false) {
+    FeedBuilder buildFeed(int window=10, const std::string_view community=TRENDING, const std::string_view sort=SORT_HOT, const bool appSafe=false) {
         return FeedBuilder(this, window, community, sort, appSafe);
     }
 };
